@@ -1,21 +1,81 @@
-/Novel_Src
-/.venv
-/build
-/dist
-/.vscode
-/__pycache__
+# Python
 __pycache__/
-*.pyc
-/markdown
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Data directories (user content)
+/Novel_Src
+/novel
 /vectorstore
+/data
+/markdown
 /example
+/backup
+
+# Config files with secrets
 config.json
 config_test.json
-.idea/
-/novel
-app.log
-test.py
-/backup
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build output
+frontend/dist/
+frontend/dist-ssr/
+
+# Python package files
 uv.lock
 .python-version
 pyproject.toml
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# PyInstaller
+*.spec

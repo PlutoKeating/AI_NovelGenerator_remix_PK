@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from chapter_directory_parser import (
+from backend.chapter_directory_parser import (
     get_chapter_info_from_blueprint,
     parse_chapter_blueprint,
 )
