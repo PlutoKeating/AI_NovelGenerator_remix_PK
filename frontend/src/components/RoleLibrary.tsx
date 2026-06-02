@@ -9,7 +9,7 @@ import { useNovelStore } from "../stores/novelStore";
 import api from "../lib/api";
 import { toast } from "./ui/Toast";
 
-interface Role {
+interface LocalRole {
   name: string;
   description: string;
   character_arc: string;
@@ -22,8 +22,8 @@ export default function RoleLibrary() {
   const novelPath = useNovelStore((s) => s.novelPath);
 
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = React.useState<Role | null>(null);
-  const [editRole, setEditRole] = React.useState<Role | null>(null);
+  const [selectedRole, setSelectedRole] = React.useState<LocalRole | null>(null);
+  const [editRole, setEditRole] = React.useState<LocalRole | null>(null);
   const [newCategoryName, setNewCategoryName] = React.useState("");
   const [showNewCategory, setShowNewCategory] = React.useState(false);
   const [analyzeText, setAnalyzeText] = React.useState("");
@@ -37,7 +37,7 @@ export default function RoleLibrary() {
       await api.post("/roles", {
         novel_path: novelPath,
         category: selectedCategory,
-        role: editRole,
+        role: { name: editRole.name, description: editRole.description, character_arc: editRole.character_arc, relationships: editRole.relationships },
       });
       await loadRoles();
       setEditRole(null);
@@ -123,7 +123,7 @@ export default function RoleLibrary() {
             {currentCategory?.roles.map((role) => (
               <button
                 key={role.name}
-                onClick={() => { setSelectedRole(role); setEditRole(null); }}
+                onClick={() => { setSelectedRole(role as LocalRole); setEditRole(null); }}
                 className={`w-full text-left px-2 py-1 rounded text-sm ${selectedRole?.name === role.name ? "bg-slate-200 dark:bg-slate-700 font-semibold" : "hover:bg-slate-100 dark:hover:bg-slate-800"}`}
               >
                 {role.name}

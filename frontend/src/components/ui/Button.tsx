@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "../../lib/utils";
+import { designSystem } from "../../designSystem";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
@@ -9,12 +10,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     const variants = {
-      default: "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200",
-      destructive: "bg-red-600 text-white hover:bg-red-700",
-      outline: "border border-slate-300 bg-transparent hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800",
-      secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-700",
-      ghost: "hover:bg-slate-100 dark:hover:bg-slate-800",
-      link: "text-slate-900 underline-offset-4 hover:underline dark:text-slate-50",
+      default: designSystem.buttons.primary,
+      destructive: designSystem.buttons.destructive,
+      outline: designSystem.buttons.outline,
+      secondary: designSystem.buttons.secondary,
+      ghost: designSystem.buttons.ghost,
+      link: "text-cyan-400 underline-offset-4 hover:underline",
     };
     const sizes = {
       default: "h-10 px-4 py-2",
@@ -26,7 +27,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center rounded text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-pink-500 disabled:pointer-events-none disabled:opacity-50",
           variants[variant],
           sizes[size],
           className

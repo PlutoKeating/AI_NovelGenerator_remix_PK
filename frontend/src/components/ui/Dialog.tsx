@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "../../lib/utils";
+import { designSystem } from "../../designSystem";
 
 interface DialogProps {
   open: boolean;
@@ -11,8 +12,8 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange?.(false)} />
-      <div className="relative z-50 w-full max-w-lg rounded-lg border bg-white p-6 shadow-lg dark:bg-slate-950 dark:border-slate-800">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-xs" onClick={() => onOpenChange?.(false)} />
+      <div className={cn(designSystem.dialogContent)}>
         {children}
       </div>
     </div>
@@ -20,17 +21,17 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
 };
 
 const DialogHeader: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left mb-4", className)}>
+  <div className={cn(designSystem.dialogHeader, className)}>
     {children}
   </div>
 );
 
 const DialogTitle: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-  <h2 className={cn("text-lg font-semibold leading-none tracking-tight", className)}>{children}</h2>
+  <h2 className={cn(designSystem.dialogTitle, className)}>{children}</h2>
 );
 
 const DialogFooter: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => (
-  <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-4", className)}>
+  <div className={cn(designSystem.dialogFooter, className)}>
     {children}
   </div>
 );

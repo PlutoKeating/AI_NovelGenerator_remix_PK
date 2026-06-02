@@ -14,9 +14,22 @@ def ensure_openai_base_url_has_v1(url: str) -> str:
     若用户输入的 url 不包含 '/v1'，则在末尾追加 '/v1'。
     """
     import re
+    import os
     url = url.strip()
     if not url:
         return url
+
+    # If running inside Docker and URL points to localhost/127.0.0.1, rewrite to host.docker.internal
+    if os.path.exists('/.dockerenv') or os.environ.get('DOCKER_ENV') or os.environ.get('AM_I_IN_A_DOCKER_CONTAINER') or os.path.exists('/proc/1/cgroup') and any('docker' in line for line in open('/proc/1/cgroup', 'r', errors='ignore')):
+        old_url = url
+        url = url.replace('localhost', 'host.docker.internal').replace('127.0.0.1', 'host.docker.internal')
+        if url != old_url:
+            logging.info(f"Docker detected (embeddings): rewrote base_url from '{old_url}' to '{url}' to access host machine")
+
+    if url.endswith('/api') or url.endswith('/api/'):
+        url = url.rstrip('/').rstrip('api').rstrip('/') + '/v1'
+        return url
+
     if not re.search(r'/v\d+$', url):
         if '/v1' not in url:
             url = url.rstrip('/') + '/v1'
@@ -82,6 +95,15 @@ class OllamaEmbeddingAdapter(BaseEmbeddingAdapter):
     """
     def __init__(self, model_name: str, base_url: str):
         self.model_name = model_name
+        import os
+        base_url = base_url.strip()
+        if os.path.exists('/.dockerenv') or os.environ.get('DOCKER_ENV') or os.environ.get('AM_I_IN_A_DOCKER_CONTAINER') or os.path.exists('/proc/1/cgroup') and any('docker' in line for line in open('/proc/1/cgroup', 'r', errors='ignore')):
+            old_base_url = base_url
+            base_url = base_url.replace('localhost', 'host.docker.internal').replace('127.0.0.1', 'host.docker.internal')
+            if base_url != old_base_url:
+                logging.info(f"Docker detected (Ollama embedding): rewrote base_url from '{old_base_url}' to '{base_url}' to access host machine")
+        if base_url.endswith("/api") or base_url.endswith("/api/"):
+            base_url = base_url.rstrip("/").rstrip("api").rstrip("/")
         self.base_url = base_url.rstrip("/")
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -290,6 +312,8 @@ def create_embedding_adapter(
     """
     工厂函数：根据 interface_format 返回不同的 embedding 适配器实例
     """
+    if not api_key:
+        api_key = "not_provided"
     fmt = interface_format.strip().lower()
     if fmt == "openai":
         return OpenAIEmbeddingAdapter(api_key, base_url, model_name)

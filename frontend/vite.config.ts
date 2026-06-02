@@ -5,4 +5,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './',
+  build: {
+    // Disable CSS minification to prevent Lightning CSS from removing valid rules
+    cssMinify: false,
+  },
 })

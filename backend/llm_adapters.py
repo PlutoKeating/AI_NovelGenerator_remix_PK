@@ -19,12 +19,25 @@ def check_base_url(url: str) -> str:
     2. 否则检查是否需要添加/v1后缀
     """
     import re
+    import os
     url = url.strip()
     if not url:
         return url
         
+    # If running inside Docker and URL points to localhost/127.0.0.1, rewrite to host.docker.internal
+    if os.path.exists('/.dockerenv') or os.environ.get('DOCKER_ENV') or os.environ.get('AM_I_IN_A_DOCKER_CONTAINER') or os.path.exists('/proc/1/cgroup') and any('docker' in line for line in open('/proc/1/cgroup', 'r', errors='ignore')):
+        old_url = url
+        url = url.replace('localhost', 'host.docker.internal').replace('127.0.0.1', 'host.docker.internal')
+        if url != old_url:
+            logging.info(f"Docker detected: rewrote base_url from '{old_url}' to '{url}' to access host machine")
+
     if url.endswith('#'):
         return url.rstrip('#')
+        
+    # If the base URL ends with /api or /api/, replace it with /v1 for OpenAI compatibility (especially for Ollama)
+    if url.endswith('/api') or url.endswith('/api/'):
+        url = url.rstrip('/').rstrip('api').rstrip('/') + '/v1'
+        return url
         
     if not re.search(r'/v\d+$', url):
         if '/v1' not in url:
@@ -37,6 +50,81 @@ class BaseLLMAdapter:
     """
     def invoke(self, prompt: str) -> str:
         raise NotImplementedError("Subclasses must implement .invoke(prompt) method.")
+
+    def stream(self, prompt: str):
+        """流式输出生成块，默认如果存在 self._client 且有 stream 属性则使用其进行流式输出。"""
+        if hasattr(self, "_client") and hasattr(self._client, "stream"):
+            in_thinking = False
+            for chunk in self._client.stream(prompt):
+                # Safe attribute and keys lookup
+                additional_kwargs = getattr(chunk, "additional_kwargs", {}) or {}
+                reasoning = additional_kwargs.get("reasoning_content", "")
+                if reasoning:
+                    if not in_thinking:
+                        yield "<think>"
+                        in_thinking = True
+                    yield reasoning
+                else:
+                    if in_thinking:
+                        yield "</think>"
+                        in_thinking = False
+                    content = getattr(chunk, "content", "")
+                    if content:
+                        yield content
+            if in_thinking:
+                yield "</think>"
+        elif hasattr(self, "_client") and hasattr(self._client, "chat"):
+            # 适配标准 OpenAI SDK 的流式调用
+            try:
+                system_content = "You are a helpful AI Assistant."
+                if isinstance(self, GrokAdapter):
+                    system_content = "You are Grok, created by xAI."
+                elif isinstance(self, (SiliconFlowAdapter, VolcanoEngineAIAdapter)):
+                    system_content = "你是DeepSeek，是一个 AI 人工智能助手"
+                    
+                response = self._client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": system_content},
+                        {"role": "user", "content": prompt},
+                    ],
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                    stream=True
+                )
+                
+                in_thinking = False
+                for chunk in response:
+                    if not chunk.choices:
+                        continue
+                    delta = chunk.choices[0].delta
+                    
+                    # 优先获取 reasoning_content 字段 (部分云厂商提供)
+                    reasoning = ""
+                    if hasattr(delta, "reasoning_content") and delta.reasoning_content:
+                        reasoning = delta.reasoning_content
+                    elif hasattr(delta, "model_extra") and delta.model_extra and "reasoning_content" in delta.model_extra:
+                        reasoning = delta.model_extra["reasoning_content"]
+                        
+                    if reasoning:
+                        if not in_thinking:
+                            yield "<think>"
+                            in_thinking = True
+                        yield reasoning
+                    else:
+                        if in_thinking:
+                            yield "</think>"
+                            in_thinking = False
+                        content = getattr(delta, "content", "") or ""
+                        if content:
+                            yield content
+                if in_thinking:
+                    yield "</think>"
+            except Exception as e:
+                logging.error(f"OpenAI raw SDK streaming failed: {e}")
+                yield self.invoke(prompt)
+        else:
+            yield self.invoke(prompt)
 
 class DeepSeekAdapter(BaseLLMAdapter):
     """
@@ -401,6 +489,8 @@ def create_llm_adapter(
     """
     工厂函数：根据 interface_format 返回不同的适配器实例。
     """
+    if not api_key:
+        api_key = "not_provided"
     fmt = interface_format.strip().lower()
     if fmt == "deepseek":
         return DeepSeekAdapter(api_key, base_url, model_name, max_tokens, temperature, timeout)

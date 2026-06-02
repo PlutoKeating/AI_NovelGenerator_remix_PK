@@ -1,25 +1,26 @@
 import { create } from "zustand";
-
-export type TaskType = "architecture" | "blueprint" | "draft" | "finalize" | "batch" | "consistency" | "knowledge" | "clear_vectorstore";
-
-export interface GenerationTask {
-  id: string;
-  type: TaskType;
-  status: "running" | "success" | "error";
-  message: string;
-  createdAt: number;
-}
+import type { GenerationTask, PipelineStatus, LogEntry } from "../types";
 
 interface GenerationState {
   tasks: GenerationTask[];
+  currentPipelineStep: number | null;
+  pipelineStatus: PipelineStatus;
+  logs: LogEntry[];
   addTask: (task: Omit<GenerationTask, "id" | "createdAt">) => string;
   updateTask: (id: string, patch: Partial<Omit<GenerationTask, "id">>) => void;
   removeTask: (id: string) => void;
   clearTasks: () => void;
+  setPipelineStep: (step: number | null) => void;
+  setPipelineStatus: (status: PipelineStatus) => void;
+  addLog: (message: string, level?: LogEntry["level"]) => void;
+  clearLogs: () => void;
 }
 
 export const useGenerationStore = create<GenerationState>((set) => ({
   tasks: [],
+  currentPipelineStep: null,
+  pipelineStatus: "idle",
+  logs: [],
 
   addTask: (task) => {
     const id = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -39,4 +40,20 @@ export const useGenerationStore = create<GenerationState>((set) => ({
   },
 
   clearTasks: () => set({ tasks: [] }),
+
+  setPipelineStep: (step) => set({ currentPipelineStep: step }),
+
+  setPipelineStatus: (status) => set({ pipelineStatus: status }),
+
+  addLog: (message, level = "info") => {
+    const entry: LogEntry = {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      time: new Date().toLocaleTimeString(),
+      message,
+      level,
+    };
+    set((state) => ({ logs: [...state.logs.slice(-199), entry] }));
+  },
+
+  clearLogs: () => set({ logs: [] }),
 }));

@@ -4,6 +4,7 @@ import { Input } from "./ui/Input";
 import { Label } from "./ui/Label";
 import { Switch } from "./ui/Switch";
 import { useConfigStore } from "../stores/configStore";
+
 import api from "../lib/api";
 import { toast } from "./ui/Toast";
 
@@ -15,7 +16,7 @@ export default function WebDAVPanel() {
   if (!config) return null;
   const wc = config.webdav_config || {};
 
-  const updateWebDAV = (patch: Partial<typeof wc>) => {
+  const updateWebDAV = (patch: Record<string, any>) => {
     updateConfig({ webdav_config: { ...wc, ...patch } });
   };
 
@@ -52,7 +53,7 @@ export default function WebDAVPanel() {
   return (
     <div className="space-y-4 max-w-lg">
       <div className="flex items-center gap-2">
-        <Switch checked={wc.enabled || false} onCheckedChange={(v) => updateWebDAV({ enabled: v })} />
+        <Switch checked={wc.enabled || false} onCheckedChange={(v: boolean) => updateWebDAV({ enabled: v as any })} />
         <Label>Enable WebDAV Sync</Label>
       </div>
 

@@ -1,54 +1,6 @@
 import { create } from "zustand";
 import api from "../lib/api";
-
-export interface LLMConfig {
-  api_key: string;
-  base_url: string;
-  model: string;
-  temperature: number;
-  max_tokens: number;
-  timeout: number;
-}
-
-export interface EmbeddingConfig {
-  api_key: string;
-  base_url: string;
-  model: string;
-  chunk_size: number;
-  chunk_overlap: number;
-}
-
-export interface OtherParams {
-  topic: string;
-  genre: string;
-  filepath: string;
-  num_chapters: number;
-  word_number: number;
-  chapter_num: string;
-  user_guidance: string;
-  characters_involved: string;
-  key_items: string;
-  scene_location: string;
-  time_constraint: string;
-}
-
-export interface WebDAVConfig {
-  enabled: boolean;
-  url: string;
-  username: string;
-  password: string;
-  remote_path: string;
-  sync_interval: number;
-}
-
-export interface AppConfig {
-  llm_configs: Record<string, LLMConfig>;
-  embedding_configs: Record<string, EmbeddingConfig>;
-  other_params: OtherParams;
-  choose_configs: Record<string, string>;
-  proxy_setting: { enabled: boolean; http_proxy: string; https_proxy: string };
-  webdav_config: WebDAVConfig;
-}
+import type { AppConfig, OtherParams, LLMConfig, EmbeddingConfig } from "../types";
 
 interface ConfigState {
   config: AppConfig | null;
@@ -63,6 +15,7 @@ interface ConfigState {
   addEmbeddingConfig: (name: string, cfg: EmbeddingConfig) => void;
   removeEmbeddingConfig: (name: string) => void;
   setChooseConfig: (stage: string, llmName: string) => void;
+  isConfigComplete: () => { complete: boolean; missing: string[] };
 }
 
 export const useConfigStore = create<ConfigState>((set, get) => ({
@@ -136,5 +89,17 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         ? { ...state.config, choose_configs: { ...state.config.choose_configs, [stage]: llmName } }
         : null,
     }));
+  },
+
+  isConfigComplete: () => {
+    const { config } = get();
+    const missing: string[] = [];
+    if (!config) return { complete: false, missing: ["Config not loaded"] };
+    if (Object.keys(config.llm_configs).length === 0) missing.push("LLM Config");
+    if (Object.keys(config.embedding_configs).length === 0) missing.push("Embedding Config");
+    if (!config.other_params.filepath) missing.push("Save Path");
+    if (!config.other_params.topic) missing.push("Topic");
+    if (!config.other_params.genre) missing.push("Genre");
+    return { complete: missing.length === 0, missing };
   },
 }));
